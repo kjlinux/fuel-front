@@ -1,10 +1,10 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-8">
     <!-- Page Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-3xl font-bold text-foreground">Stations</h2>
-        <p class="text-muted-foreground mt-1">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="space-y-2">
+        <h2 class="text-4xl font-bold text-foreground tracking-tight">Stations</h2>
+        <p class="text-lg text-muted-foreground">
           Gérez vos stations-service et leurs cuves
         </p>
       </div>
@@ -50,7 +50,7 @@
     </Card>
 
     <!-- Stations Grid -->
-    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       <StationCard
         v-for="station in filteredStations"
         :key="station.id"

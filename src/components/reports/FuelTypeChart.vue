@@ -1,57 +1,76 @@
 <template>
-  <div class="h-[300px] flex items-center justify-center">
-    <ResponsiveContainer width="100%" height="100%">
-      <PieChart>
-        <Pie
-          :data="data"
-          cx="50%"
-          cy="50%"
-          :label-line="false"
-          :label="renderCustomLabel"
-          :outer-radius="100"
-          fill="#8884d8"
-          data-key="value"
-        >
-          <template v-for="(entry, index) in data" :key="`cell-${index}`">
-            <Cell :fill="entry.color" />
-          </template>
-        </Pie>
-        <Tooltip
-          :content-style="{
-            backgroundColor: 'hsl(var(--card))',
-            border: '1px solid hsl(var(--border))',
-            borderRadius: '8px'
-          }"
-        />
-        <Legend />
-      </PieChart>
-    </ResponsiveContainer>
+  <div class="h-[300px] w-full flex items-center justify-center">
+    <v-chart :option="chartOption" autoresize class="w-full h-full" />
   </div>
 </template>
 
 <script setup>
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { h } from 'vue'
+import { computed } from 'vue'
+import VChart from 'vue-echarts'
+import { use } from 'echarts/core'
+import { PieChart } from 'echarts/charts'
+import {
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 
-defineProps({
+use([
+  PieChart,
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent,
+  CanvasRenderer
+])
+
+const props = defineProps({
   data: {
     type: Array,
     required: true
   }
 })
 
-function renderCustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }) {
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.5
-  const x = cx + radius * Math.cos(-midAngle * Math.PI / 180)
-  const y = cy + radius * Math.sin(-midAngle * Math.PI / 180)
-
-  return h('text', {
-    x: x,
-    y: y,
-    fill: 'white',
-    textAnchor: x > cx ? 'start' : 'end',
-    dominantBaseline: 'central',
-    style: { fontSize: '14px', fontWeight: 'bold' }
-  }, `${(percent * 100).toFixed(0)}%`)
-}
+const chartOption = computed(() => ({
+  tooltip: {
+    trigger: 'item',
+    backgroundColor: 'hsl(var(--card))',
+    borderColor: 'hsl(var(--border))',
+    textStyle: {
+      color: 'hsl(var(--foreground))'
+    },
+    formatter: '{b}: {c} L ({d}%)'
+  },
+  legend: {
+    bottom: 10,
+    textStyle: {
+      color: 'hsl(var(--foreground))'
+    }
+  },
+  series: [
+    {
+      type: 'pie',
+      radius: ['40%', '70%'],
+      center: ['50%', '45%'],
+      avoidLabelOverlap: true,
+      label: {
+        show: true,
+        formatter: '{d}%',
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: 'bold'
+      },
+      labelLine: {
+        show: false
+      },
+      data: props.data.map(item => ({
+        value: item.value,
+        name: item.name,
+        itemStyle: {
+          color: item.color
+        }
+      }))
+    }
+  ]
+}))
 </script>

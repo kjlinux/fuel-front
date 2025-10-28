@@ -4,39 +4,69 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Couleurs de base - Fond clair avec teinte bleutée professionnelle */
+  --background: oklch(0.98 0.005 240);
+  --foreground: oklch(0.15 0.01 240);
+
+  /* Cards - Blanc pur pour contraster */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.15 0.01 240);
+
+  /* Popovers */
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --popover-foreground: oklch(0.15 0.01 240);
+
+  /* Couleur primaire - Bleu pétrole moderne inspiré des stations Shell/Total */
+  --primary: oklch(0.55 0.15 240);
+  --primary-foreground: oklch(0.99 0 0);
+
+  /* Couleur secondaire - Orange énergique pour les accents */
+  --secondary: oklch(0.95 0.02 80);
+  --secondary-foreground: oklch(0.35 0.08 80);
+
+  /* Muted - Gris doux */
+  --muted: oklch(0.96 0.005 240);
+  --muted-foreground: oklch(0.50 0.01 240);
+
+  /* Accent - Orange vif pour les éléments interactifs */
+  --accent: oklch(0.96 0.03 50);
+  --accent-foreground: oklch(0.35 0.12 50);
+
+  /* Destructive - Rouge pour les alertes critiques */
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+
+  /* Bordures et inputs */
+  --border: oklch(0.90 0.01 240);
+  --input: oklch(0.90 0.01 240);
+  --ring: oklch(0.55 0.15 240);
+
+  /* Couleurs des graphiques - Palette énergétique */
+  --chart-1: oklch(0.60 0.18 240); /* Bleu pétrole */
+  --chart-2: oklch(0.65 0.20 50);  /* Orange essence */
+  --chart-3: oklch(0.50 0.15 140); /* Vert éco */
+  --chart-4: oklch(0.70 0.18 280); /* Violet premium */
+  --chart-5: oklch(0.55 0.16 25);  /* Rouge diesel */
+
+  --radius: 0.75rem;
+
+  /* Sidebar - Dégradé subtil de bleu */
+  --sidebar: oklch(0.97 0.008 240);
+  --sidebar-foreground: oklch(0.20 0.02 240);
+  --sidebar-primary: oklch(0.55 0.15 240);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.94 0.02 240);
+  --sidebar-accent-foreground: oklch(0.30 0.05 240);
+  --sidebar-border: oklch(0.88 0.01 240);
+  --sidebar-ring: oklch(0.55 0.15 240);
+
+  /* Couleurs personnalisées pour l'industrie pétrolière */
+  --success: oklch(0.60 0.15 145);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.70 0.18 70);
+  --warning-foreground: oklch(0.15 0.01 70);
+  --info: oklch(0.60 0.15 220);
+  --info-foreground: oklch(0.99 0 0);
 }
 
 @theme inline {
@@ -77,6 +107,12 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
 }
 
 @layer base {

@@ -1,14 +1,14 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-8">
     <!-- Page Header -->
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-3xl font-bold text-foreground">Alertes</h2>
-        <p class="text-muted-foreground mt-1">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="space-y-2">
+        <h2 class="text-4xl font-bold text-foreground tracking-tight">Alertes</h2>
+        <p class="text-lg text-muted-foreground">
           Gérez et surveillez toutes les alertes du système
         </p>
       </div>
-      
+
       <div class="flex items-center gap-2">
         <Badge variant="destructive" class="text-base px-3 py-1">
           {{ criticalCount }} critiques
@@ -20,7 +20,7 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid gap-4 md:grid-cols-4">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardContent class="p-4">
           <div class="flex items-center justify-between">

@@ -1,9 +1,9 @@
 <template>
-  <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-3xl font-bold text-foreground">Monitoring Temps Réel</h2>
-        <p class="text-muted-foreground mt-1">
+  <div class="space-y-8">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="space-y-2">
+        <h2 class="text-4xl font-bold text-foreground tracking-tight">Monitoring Temps Réel</h2>
+        <p class="text-lg text-muted-foreground">
           Surveillance en direct des stations et cuves
         </p>
       </div>
@@ -58,7 +58,7 @@
       />
     </div>
 
-    <div class="grid gap-4 md:grid-cols-3">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <Card>
         <CardContent class="p-4">
           <div class="flex items-center justify-between">

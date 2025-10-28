@@ -1,9 +1,9 @@
 <template>
-  <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-3xl font-bold text-foreground">Rapports & Statistiques</h2>
-        <p class="text-muted-foreground mt-1">
+  <div class="space-y-8">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="space-y-2">
+        <h2 class="text-4xl font-bold text-foreground tracking-tight">Rapports & Statistiques</h2>
+        <p class="text-lg text-muted-foreground">
           Analysez les performances et la consommation de vos stations
         </p>
       </div>
@@ -70,7 +70,7 @@
       </CardContent>
     </Card>
 
-    <div class="grid gap-4 md:grid-cols-4">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardContent class="p-4">
           <div class="flex items-center justify-between">
@@ -233,8 +233,8 @@ const metrics = ref({
 // Mock chart data
 const consumptionData = ref(generateConsumptionData())
 const fuelTypeData = ref([
-  { name: 'Essence', value: 145680, color: '#3b82f6' },
-  { name: 'Gasoil', value: 100000, color: '#f59e0b' }
+  { name: 'Essence', value: 145680, color: '#4169E1' },
+  { name: 'Gasoil', value: 100000, color: '#FF8C42' }
 ])
 const stationComparisonData = ref([
   { name: 'Total Dakar', essence: 45000, gasoil: 32000 },

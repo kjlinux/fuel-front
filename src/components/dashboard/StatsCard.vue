@@ -1,5 +1,5 @@
 <template>
-  <Card>
+  <Card class="group hover:border-primary/50 transition-all duration-200">
     <CardContent class="p-6">
       <div class="flex items-center justify-between">
         <div class="flex-1">
@@ -24,8 +24,8 @@
           </Badge>
         </div>
         
-        <div :class="['flex items-center justify-center w-12 h-12 rounded-lg', iconBgClass]">
-          <component :is="iconComponent" :class="['w-6 h-6', iconColorClass]" />
+        <div :class="['flex items-center justify-center w-12 h-12 rounded-lg transition-transform duration-200 group-hover:scale-110', iconBgClass]">
+          <component :is="iconComponent" :class="['w-6 h-6 transition-transform duration-200', iconColorClass]" />
         </div>
       </div>
     </CardContent>

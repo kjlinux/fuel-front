@@ -1,13 +1,13 @@
 <template>
-  <div class="space-y-6">
-    <div>
-      <h2 class="text-3xl font-bold text-foreground">Vue d'ensemble</h2>
-      <p class="text-muted-foreground mt-1">
+  <div class="space-y-8">
+    <div class="space-y-2">
+      <h2 class="text-4xl font-bold text-foreground tracking-tight">Vue d'ensemble</h2>
+      <p class="text-lg text-muted-foreground">
         Surveillance en temps réel de toutes vos stations
       </p>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatsCard
         title="Stations actives"
         :value="stats.activeStations"

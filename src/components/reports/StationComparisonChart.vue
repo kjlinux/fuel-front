@@ -1,52 +1,119 @@
 <template>
-  <div class="h-[300px]">
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart :data="data" :margin="{ top: 5, right: 10, left: 10, bottom: 5 }">
-        <CartesianGrid strokeDasharray="3 3" :stroke="gridColor" />
-        <XAxis
-          dataKey="name"
-          :stroke="axisColor"
-          :tick="{ fill: axisColor, fontSize: 12 }"
-        />
-        <YAxis
-          :stroke="axisColor"
-          :tick="{ fill: axisColor, fontSize: 12 }"
-          :label="{ value: 'Litres', angle: -90, position: 'insideLeft', fill: axisColor }"
-        />
-        <Tooltip
-          :contentStyle="{
-            backgroundColor: 'hsl(var(--card))',
-            border: '1px solid hsl(var(--border))',
-            borderRadius: '8px'
-          }"
-        />
-        <Legend />
-        <Bar dataKey="essence" fill="#3b82f6" name="Essence" :radius="[4, 4, 0, 0]" />
-        <Bar dataKey="gasoil" fill="#f59e0b" name="Gasoil" :radius="[4, 4, 0, 0]" />
-      </BarChart>
-    </ResponsiveContainer>
+  <div class="h-[300px] w-full">
+    <v-chart :option="chartOption" autoresize class="w-full h-full" />
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import VChart from 'vue-echarts'
+import { use } from 'echarts/core'
+import { BarChart } from 'echarts/charts'
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer
-} from 'recharts'
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent,
+  GridComponent
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 
-defineProps({
+use([
+  BarChart,
+  TitleComponent,
+  TooltipComponent,
+  LegendComponent,
+  GridComponent,
+  CanvasRenderer
+])
+
+const props = defineProps({
   data: {
     type: Array,
     required: true
   }
 })
 
-const gridColor = 'hsl(var(--border))'
-const axisColor = 'hsl(var(--muted-foreground))'
+const chartOption = computed(() => ({
+  grid: {
+    left: '50',
+    right: '20',
+    top: '20',
+    bottom: '30',
+    containLabel: false
+  },
+  tooltip: {
+    trigger: 'axis',
+    axisPointer: {
+      type: 'shadow'
+    },
+    backgroundColor: 'hsl(var(--card))',
+    borderColor: 'hsl(var(--border))',
+    textStyle: {
+      color: 'hsl(var(--foreground))'
+    }
+  },
+  legend: {
+    data: ['Essence', 'Gasoil'],
+    textStyle: {
+      color: 'hsl(var(--foreground))'
+    }
+  },
+  xAxis: {
+    type: 'category',
+    data: props.data.map(d => d.name),
+    axisLine: {
+      lineStyle: {
+        color: 'hsl(var(--border))'
+      }
+    },
+    axisLabel: {
+      color: 'hsl(var(--muted-foreground))',
+      fontSize: 12
+    }
+  },
+  yAxis: {
+    type: 'value',
+    name: 'Litres',
+    nameLocation: 'middle',
+    nameGap: 40,
+    nameTextStyle: {
+      color: 'hsl(var(--muted-foreground))'
+    },
+    axisLine: {
+      lineStyle: {
+        color: 'hsl(var(--border))'
+      }
+    },
+    axisLabel: {
+      color: 'hsl(var(--muted-foreground))',
+      fontSize: 12
+    },
+    splitLine: {
+      lineStyle: {
+        color: 'hsl(var(--border))',
+        type: 'dashed'
+      }
+    }
+  },
+  series: [
+    {
+      name: 'Essence',
+      type: 'bar',
+      data: props.data.map(d => d.essence),
+      itemStyle: {
+        color: '#4169E1',
+        borderRadius: [4, 4, 0, 0]
+      }
+    },
+    {
+      name: 'Gasoil',
+      type: 'bar',
+      data: props.data.map(d => d.gasoil),
+      itemStyle: {
+        color: '#FF8C42',
+        borderRadius: [4, 4, 0, 0]
+      }
+    }
+  ]
+}))
 </script>
