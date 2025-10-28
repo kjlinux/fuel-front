@@ -185,6 +185,11 @@ const stations = ref([
 
 const recentAlerts = computed(() => alertsStore.alerts.slice(0, 5))
 
+// Extract all tanks from all stations
+const tanks = computed(() => {
+  return stations.value.flatMap(station => station.tanks)
+})
+
 const stats = computed(() => {
   const totalStations = stations.value.length
   const activeStations = stations.value.filter(s => s.status === 'online').length
