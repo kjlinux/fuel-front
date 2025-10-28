@@ -83,16 +83,41 @@ pnpm install
 
 3. **Configuration de l'environnement**
 
-Créer un fichier `.env` à la racine du projet :
+Copier le fichier `.env.example` en `.env` :
+
+\`\`\`bash
+cp .env.example .env
+\`\`\`
+
+**Mode Simulation (Recommandé pour le développement et la démo):**
+
+Par défaut, l'application fonctionne en mode simulation sans nécessiter de broker MQTT :
 
 \`\`\`env
-# API Backend
-VITE_API_URL=http://localhost:3000/api
+# Désactive MQTT et utilise des données simulées
+VITE_MQTT_ENABLED=false
+\`\`\`
 
-# MQTT Configuration
-VITE_MQTT_BROKER_URL=ws://localhost:9001
+**Mode MQTT Réel (Pour la production avec capteurs IoT):**
+
+Si vous avez un broker MQTT et des capteurs réels :
+
+\`\`\`env
+# Active MQTT
+VITE_MQTT_ENABLED=true
+
+# Broker MQTT (exemple avec HiveMQ public)
+VITE_MQTT_BROKER_URL=wss://broker.hivemq.com:8884/mqtt
+
+# Ou broker local
+# VITE_MQTT_BROKER_URL=ws://localhost:8083/mqtt
+
+# Credentials (optionnel)
 VITE_MQTT_USERNAME=your_username
 VITE_MQTT_PASSWORD=your_password
+
+# API Backend (si disponible)
+VITE_API_URL=http://localhost:3000/api
 \`\`\`
 
 4. **Lancer le serveur de développement**
@@ -251,10 +276,24 @@ Le design utilise un système de tokens CSS définis dans `src/assets/globals.cs
 ## Déploiement
 
 ### Vercel (Recommandé)
+
+1. **Connectez votre repository GitHub à Vercel**
+
+2. **Configurez les variables d'environnement dans Vercel:**
+   - Allez dans Settings > Environment Variables
+   - Ajoutez : `VITE_MQTT_ENABLED` = `false` (pour utiliser le mode simulation)
+   - Optionnel : `VITE_API_URL` si vous avez un backend
+
+3. **Déployez:**
 \`\`\`bash
+# Installation CLI (optionnel)
 npm install -g vercel
+
+# Déployer
 vercel
 \`\`\`
+
+**Important pour Vercel:** L'application fonctionnera automatiquement en mode simulation (sans MQTT réel) ce qui est parfait pour une démo. Si vous voulez connecter un broker MQTT en production, utilisez un broker public comme HiveMQ ou configurez votre propre broker avec SSL/TLS.
 
 ### Netlify
 \`\`\`bash
