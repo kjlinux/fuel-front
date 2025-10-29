@@ -15,21 +15,18 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium mb-2">Station *</label>
-            <Select v-model="form.stationId" required>
-              <option value="">Sélectionner une station</option>
-              <option v-for="station in stations" :key="station.id" :value="station.id">
-                {{ station.name }}
-              </option>
-            </Select>
+            <Select
+              v-model="form.stationId"
+              :options="stationOptions"
+            />
           </div>
           <div>
             <label class="block text-sm font-medium mb-2">Cuve *</label>
-            <Select v-model="form.tankId" required :disabled="!form.stationId">
-              <option value="">Sélectionner une cuve</option>
-              <option v-for="tank in availableTanks" :key="tank.id" :value="tank.id">
-                {{ tank.name }} - {{ tank.fuelType }}
-              </option>
-            </Select>
+            <Select
+              v-model="form.tankId"
+              :options="tankOptions"
+              :class="{ 'opacity-50 pointer-events-none': !form.stationId }"
+            />
           </div>
         </div>
 
@@ -261,6 +258,23 @@ const availableTanks = computed(() => {
 const selectedTank = computed(() => {
   return availableTanks.value.find((t) => t.id === Number(form.value.tankId))
 })
+
+// Options pour les selects
+const stationOptions = computed(() => [
+  { value: "", label: "Sélectionner une station" },
+  ...stations.value.map((station) => ({
+    value: station.id,
+    label: station.name,
+  })),
+])
+
+const tankOptions = computed(() => [
+  { value: "", label: "Sélectionner une cuve" },
+  ...availableTanks.value.map((tank) => ({
+    value: tank.id,
+    label: `${tank.name} - ${tank.fuelType}`,
+  })),
+])
 
 // Calculer le niveau après automatiquement
 const levelAfterCalculated = computed(() => {

@@ -125,7 +125,7 @@ class MQTTService {
         timestamp: new Date().toISOString(),
       }
 
-      this.handleMessage(`fuel/station/${station}/tank/${tankId}/level`, Buffer.from(JSON.stringify(levelData)))
+      this.handleMessage(`fuel/station/${station}/tank/${tankId}/level`, JSON.stringify(levelData))
 
       // Occasionally simulate alerts
       if (Math.random() < 0.1) {
@@ -138,14 +138,16 @@ class MQTTService {
           timestamp: new Date().toISOString(),
         }
 
-        this.handleMessage(`fuel/station/${station}/alert`, Buffer.from(JSON.stringify(alertData)))
+        this.handleMessage(`fuel/station/${station}/alert`, JSON.stringify(alertData))
       }
     }, 5000)
   }
 
   handleMessage(topic, message) {
     try {
-      const payload = JSON.parse(message.toString())
+      // Handle both Buffer (real MQTT) and string (simulation)
+      const messageStr = typeof message === 'string' ? message : message.toString()
+      const payload = JSON.parse(messageStr)
       console.log(`MQTT: Message received on ${topic}`, payload)
 
       // Notify all subscribers for this topic

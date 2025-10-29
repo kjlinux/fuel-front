@@ -89,24 +89,23 @@
             </Input>
           </div>
 
-          <Select v-model="filterStation" class="w-[200px]">
-            <option value="">Toutes les stations</option>
-            <option v-for="station in stations" :key="station.id" :value="station.id">
-              {{ station.name }}
-            </option>
-          </Select>
+          <Select
+            v-model="filterStation"
+            :options="stationOptions"
+            class="w-[200px]"
+          />
 
-          <Select v-model="filterFuelType" class="w-[150px]">
-            <option value="">Tous les types</option>
-            <option value="essence">Essence</option>
-            <option value="gasoil">Gasoil</option>
-          </Select>
+          <Select
+            v-model="filterFuelType"
+            :options="fuelTypeOptions"
+            class="w-[150px]"
+          />
 
-          <Select v-model="filterValidation" class="w-[150px]">
-            <option value="">Tous les statuts</option>
-            <option value="validated">Validés</option>
-            <option value="pending">En attente</option>
-          </Select>
+          <Select
+            v-model="filterValidation"
+            :options="validationOptions"
+            class="w-[150px]"
+          />
 
           <Button variant="outline" @click="resetFilters">
             <X class="w-4 h-4 mr-2" />
@@ -196,6 +195,27 @@ onMounted(() => {
   deliveriesStore.fetchDeliveries()
   stationsStore.fetchStations()
 })
+
+// Options pour les selects
+const stationOptions = computed(() => [
+  { value: "", label: "Toutes les stations" },
+  ...stations.value.map((station) => ({
+    value: station.id,
+    label: station.name,
+  })),
+])
+
+const fuelTypeOptions = [
+  { value: "", label: "Tous les types" },
+  { value: "essence", label: "Essence" },
+  { value: "gasoil", label: "Gasoil" },
+]
+
+const validationOptions = [
+  { value: "", label: "Tous les statuts" },
+  { value: "validated", label: "Validés" },
+  { value: "pending", label: "En attente" },
+]
 
 const filteredDeliveries = computed(() => {
   let result = [...deliveriesStore.deliveries]

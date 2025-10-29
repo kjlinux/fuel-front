@@ -102,7 +102,10 @@ import {
   Settings,
   Menu,
   LogOut,
-  Droplet
+  Droplet,
+  Truck,
+  Activity,
+  Users
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -119,6 +122,9 @@ const navigation = [
   { name: 'Stations', to: '/stations', icon: Building2 },
   { name: 'Alertes', to: '/alerts', icon: Bell },
   { name: 'Rapports', to: '/reports', icon: FileText },
+  { name: 'Dépotages', to: '/deliveries', icon: Truck },
+  { name: 'Temps Réel', to: '/realtime', icon: Activity },
+  { name: 'Utilisateurs', to: '/users', icon: Users },
   { name: 'Paramètres', to: '/settings', icon: Settings }
 ]
 
