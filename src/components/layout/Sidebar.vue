@@ -54,7 +54,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { LayoutDashboard, Building2, Bell, BarChart3, Activity, Settings, Users, LogOut } from 'lucide-vue-next'
+import { LayoutDashboard, Building2, Bell, BarChart3, Truck, Activity, Settings, Users, LogOut } from 'lucide-vue-next'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -65,6 +65,7 @@ const menuItems = [
   { name: 'Stations', icon: Building2, path: '/stations' },
   { name: 'Alertes', icon: Bell, path: '/alerts' },
   { name: 'Rapports', icon: BarChart3, path: '/reports' },
+  { name: 'Dépotages', icon: Truck, path: '/deliveries' },
   { name: 'Temps Réel', icon: Activity, path: '/realtime' },
   { name: 'Utilisateurs', icon: Users, path: '/users' },
   { name: 'Paramètres', icon: Settings, path: '/settings' }

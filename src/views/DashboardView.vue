@@ -7,7 +7,7 @@
       </p>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
       <StatsCard
         title="Stations actives"
         :value="stats.activeStations"
@@ -36,6 +36,16 @@
         icon="AlertTriangle"
         color="orange"
       />
+      <router-link to="/deliveries">
+        <StatsCard
+          title="Livraisons ce mois"
+          :value="deliveriesStore.totalDeliveriesThisMonth"
+          :subtitle="`${formatVolume(deliveriesStore.totalVolumeThisMonth)}`"
+          icon="Truck"
+          color="purple"
+          class="cursor-pointer hover:shadow-md transition-shadow"
+        />
+      </router-link>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-2">
@@ -111,6 +121,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useStationsStore } from '@/stores/stations'
 import { useAlertsStore } from '@/stores/alerts'
+import { useDeliveriesStore } from '@/stores/deliveries'
 import {
   Building2,
   Droplet,
@@ -135,6 +146,7 @@ import RecentAlerts from '@/components/dashboard/RecentAlerts.vue'
 
 const stationsStore = useStationsStore()
 const alertsStore = useAlertsStore()
+const deliveriesStore = useDeliveriesStore()
 
 const refreshing = ref(false)
 const fuelLevelsData = ref([])

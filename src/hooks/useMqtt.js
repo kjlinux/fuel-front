@@ -2,12 +2,17 @@ import { ref, onMounted, onUnmounted } from "vue"
 import mqtt from "mqtt"
 import { useStationsStore } from "@/stores/stations"
 import { useAlertsStore } from "@/stores/alerts"
+import { useDeliveriesStore } from "@/stores/deliveries"
 
 export function useMqtt() {
   const client = ref(null)
   const connected = ref(false)
   const stationsStore = useStationsStore()
   const alertsStore = useAlertsStore()
+  const deliveriesStore = useDeliveriesStore()
+
+  // Track previous tank levels for delivery detection
+  const previousLevels = ref(new Map())
 
   // Check if MQTT is enabled via environment variable
   const mqttEnabled = import.meta.env.VITE_MQTT_ENABLED === 'true'
@@ -42,13 +47,14 @@ export function useMqtt() {
 
       client.value.on("message", (topic, message) => {
         const parts = topic.split("/")
-        const stationId = parts[1]
-        const tankId = parts[3]
+        const stationId = Number(parts[1])
+        const tankId = Number(parts[3])
         const messageType = parts[4]
 
         const data = JSON.parse(message.toString())
 
         if (messageType === "level") {
+          detectDelivery(stationId, tankId, data)
           stationsStore.updateTankLevel(stationId, tankId, data)
         } else if (messageType === "alert") {
           alertsStore.addAlert({
@@ -80,9 +86,72 @@ export function useMqtt() {
     }
   }
 
+  // Detect delivery based on significant level increase
+  function detectDelivery(stationId, tankId, data) {
+    const key = `${stationId}-${tankId}`
+    const previousLevel = previousLevels.value.get(key)
+
+    if (previousLevel !== undefined && data.level !== undefined) {
+      const levelDifference = data.level - previousLevel
+      const DELIVERY_THRESHOLD = 1000 // Minimum 1000L increase to consider it a delivery
+
+      // If level increased significantly, it's likely a delivery
+      if (levelDifference >= DELIVERY_THRESHOLD) {
+        const station = stationsStore.stations.find((s) => s.id === stationId)
+        const tank = station?.tanks.find((t) => t.id === tankId)
+
+        if (station && tank) {
+          console.log(`Delivery detected: ${levelDifference}L added to tank ${tankId} at station ${stationId}`)
+
+          // Auto-create delivery record
+          deliveriesStore.addDelivery({
+            stationId,
+            stationName: station.name,
+            tankId,
+            tankName: tank.name,
+            fuelType: tank.fuelType,
+            levelBefore: Math.round(previousLevel),
+            quantityDelivered: Math.round(levelDifference),
+            levelAfter: Math.round(data.level),
+            deliveredBy: "Auto-détecté",
+            driverName: "N/A",
+            truckNumber: "N/A",
+            orderNumber: `AUTO-${Date.now()}`,
+            notes: "Livraison détectée automatiquement via MQTT",
+            temperature: data.temperature || 20,
+          })
+
+          // Create alert for delivery notification
+          alertsStore.addAlert({
+            type: "delivery",
+            severity: "info",
+            stationId,
+            tankId,
+            stationName: station.name,
+            tankName: tank.name,
+            fuelType: tank.fuelType,
+            message: `Livraison détectée: +${Math.round(levelDifference)}L`,
+            details: `Une augmentation de ${Math.round(levelDifference)}L a été détectée dans la ${tank.name} (${tank.fuelType}) de ${station.name}.`,
+          })
+        }
+      }
+    }
+
+    // Update previous level
+    previousLevels.value.set(key, data.level)
+  }
+
   function startSimulatedData() {
     // Simulate real-time data updates when MQTT is not available
     console.log("Starting simulated data mode")
+
+    // Initialize previous levels from current station data
+    stationsStore.stations.forEach((station) => {
+      station.tanks.forEach((tank) => {
+        const key = `${station.id}-${tank.id}`
+        previousLevels.value.set(key, tank.level)
+      })
+    })
 
     // Simulate data updates every 10 seconds
     const interval = setInterval(() => {
@@ -91,8 +160,11 @@ export function useMqtt() {
         const stationId = Math.floor(Math.random() * 4) + 1
         const tankId = Math.floor(Math.random() * 2) + 1
 
+        const newLevel = 50 + Math.random() * 40
+        detectDelivery(stationId, tankId, { level: newLevel, temperature: 20 + Math.random() * 10 })
+
         stationsStore.updateTankLevel(stationId, tankId, {
-          level: 50 + Math.random() * 40,
+          level: newLevel,
           temperature: 20 + Math.random() * 10
         })
       }
@@ -105,6 +177,25 @@ export function useMqtt() {
           stationId: Math.floor(Math.random() * 4) + 1,
           tankId: Math.floor(Math.random() * 2) + 1,
           message: 'Alerte simulée'
+        })
+      }
+
+      // Occasionally simulate a delivery (every ~60 seconds on average)
+      if (Math.random() < 0.02) {
+        const stationId = Math.floor(Math.random() * 4) + 1
+        const tankId = Math.floor(Math.random() * 2) + 1
+        const key = `${stationId}-${tankId}`
+        const currentLevel = previousLevels.value.get(key) || 2000
+        const deliveryAmount = 10000 + Math.random() * 10000 // 10-20k liters
+
+        detectDelivery(stationId, tankId, {
+          level: currentLevel + deliveryAmount,
+          temperature: 20 + Math.random() * 5
+        })
+
+        stationsStore.updateTankLevel(stationId, tankId, {
+          level: currentLevel + deliveryAmount,
+          temperature: 20 + Math.random() * 5
         })
       }
     }, 10000)

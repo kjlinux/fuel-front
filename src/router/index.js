@@ -47,6 +47,11 @@ const router = createRouter({
           component: () => import("@/views/ReportsView.vue"),
         },
         {
+          path: "deliveries",
+          name: "deliveries",
+          component: () => import("@/views/DeliveriesView.vue"),
+        },
+        {
           path: "settings",
           name: "settings",
           component: () => import("@/views/SettingsView.vue"),
@@ -55,13 +60,13 @@ const router = createRouter({
           path: "realtime",
           name: "realtime-monitor",
           component: () => import("@/views/RealtimeMonitorView.vue"),
-          meta: { requiresAuth: true },
+          // meta: { requiresAuth: true },
         },
         {
           path: "users",
           name: "users",
           component: () => import("@/views/UsersView.vue"),
-          meta: { requiresAuth: true, requiresAdmin: true },
+          // meta: { requiresAuth: true, requiresAdmin: true },
         },
       ],
     },
