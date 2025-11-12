@@ -5,10 +5,7 @@
       sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
     ]">
       <div class="flex items-center gap-3 h-16 px-6 border-b border-border">
-        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-          <Droplet class="w-6 h-6 text-primary" />
-        </div>
-        <span class="text-xl font-bold text-foreground">FuelTrack</span>
+        <img src="/cuve_connect.png" alt="Cuve Connect Logo" class="h-10 w-auto object-contain" />
       </div>
 
       <nav class="p-4 space-y-1">
@@ -102,7 +99,6 @@ import {
   Settings,
   Menu,
   LogOut,
-  Droplet,
   Truck,
   Activity,
   Users

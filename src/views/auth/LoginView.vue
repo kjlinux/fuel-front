@@ -2,10 +2,9 @@
   <div class="min-h-screen flex items-center justify-center bg-background p-4">
     <div class="w-full max-w-md">
       <div class="text-center mb-8">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-lg bg-primary/10 mb-4">
-          <Droplet class="w-8 h-8 text-primary" />
+        <div class="inline-flex items-center justify-center mb-4">
+          <img src="/cuve_connect.png" alt="Cuve Connect Logo" class="h-20 w-auto object-contain" />
         </div>
-        <h1 class="text-3xl font-bold text-foreground mb-2">FuelTrack</h1>
         <p class="text-muted-foreground">Plateforme IoT de Suivi Carburant</p>
       </div>
 
@@ -80,7 +79,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { Droplet, Loader2 } from 'lucide-vue-next'
+import { Loader2 } from 'lucide-vue-next'
 import Card from '@/components/ui/Card.vue'
 import CardHeader from '@/components/ui/CardHeader.vue'
 import CardTitle from '@/components/ui/CardTitle.vue'
