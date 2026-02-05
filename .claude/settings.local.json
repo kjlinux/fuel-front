@@ -1,11 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm run build:*)",
-      "Bash(pnpm run dev)",
-      "Bash(timeout /t 3)"
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "mcp__*",
+      "Bash(\"C:\\\\laragon\\\\bin\\\\php\\\\php-8.4.12-nts-Win32-vs17-x64\\\\php.exe\" artisan migrate:fresh --seed)",
+      "Bash(\"C:\\\\laragon\\\\bin\\\\php\\\\php-8.4.12-nts-Win32-vs17-x64\\\\php.exe\" artisan route:list --compact)",
+      "Bash(\"C:\\\\laragon\\\\bin\\\\php\\\\php-8.4.12-nts-Win32-vs17-x64\\\\php.exe\" artisan route:list)",
+      "Bash(\"C:\\\\laragon\\\\bin\\\\php\\\\php-8.4.12-nts-Win32-vs17-x64\\\\php.exe\" artisan tinker --execute=\"echo json_encode\\([''users'' => \\\\App\\\\Models\\\\User::count\\(\\), ''stations'' => \\\\App\\\\Models\\\\Station::count\\(\\), ''tanks'' => \\\\App\\\\Models\\\\Tank::count\\(\\), ''alerts'' => \\\\App\\\\Models\\\\Alert::count\\(\\), ''deliveries'' => \\\\App\\\\Models\\\\Delivery::count\\(\\), ''tank_levels'' => \\\\App\\\\Models\\\\TankLevel::count\\(\\)]\\);\")",
+      "Bash(\"C:\\\\laragon\\\\bin\\\\php\\\\php-8.4.12-nts-Win32-vs17-x64\\\\php.exe\":*)"
     ],
-    "deny": [],
-    "ask": []
+    "deny": []
   }
 }
