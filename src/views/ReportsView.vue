@@ -54,10 +54,9 @@
                 class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="all">Toutes les stations</option>
-                <option value="1">Station Total Dakar</option>
-                <option value="2">Station Shell Rufisque</option>
-                <option value="3">Station Elton Thiès</option>
-                <option value="4">Station Oilibya Mbour</option>
+                <option v-for="station in stationsStore.stations" :key="station.id" :value="station.id">
+                  {{ station.name }}
+                </option>
               </select>
             </div>
           </div>
@@ -194,7 +193,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useStationsStore } from '@/stores/stations'
 import {
   FileText,
   Download,
@@ -217,10 +217,23 @@ import StationComparisonChart from '@/components/reports/StationComparisonChart.
 import PeakHoursChart from '@/components/reports/PeakHoursChart.vue'
 import StationPerformanceTable from '@/components/reports/StationPerformanceTable.vue'
 
+const stationsStore = useStationsStore()
+
 const selectedPeriod = ref('month')
 const selectedStation = ref('all')
 const customStartDate = ref('')
 const customEndDate = ref('')
+
+// Fetch stations on mount
+onMounted(async () => {
+  try {
+    if (stationsStore.stations.length === 0) {
+      await stationsStore.fetchStations()
+    }
+  } catch (error) {
+    console.error('Failed to fetch stations:', error)
+  }
+})
 
 // Mock metrics data
 const metrics = ref({

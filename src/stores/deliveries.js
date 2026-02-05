@@ -1,94 +1,45 @@
 import { defineStore } from "pinia"
 import { ref, computed } from "vue"
+import { deliveriesApi } from "@/services/api"
 
 export const useDeliveriesStore = defineStore("deliveries", () => {
-  const deliveries = ref([
-    {
-      id: 1,
-      stationId: 1,
-      stationName: "Station Total - Paris 15ème",
-      tankId: 2,
-      tankName: "Cuve 2",
-      fuelType: "gasoil",
-      levelBefore: 2000, // litres
-      quantityDelivered: 18000, // litres
-      levelAfter: 20000, // litres
-      deliveryDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      deliveredBy: "Transport Pétrolier SA",
-      driverName: "Jean Dupont",
-      truckNumber: "AB-123-CD",
-      orderNumber: "CMD-2025-001",
-      notes: "Livraison standard",
-      temperature: 18,
-      density: 0.85,
-      validated: true,
-      validatedBy: "Admin User",
-      validatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000),
-    },
-    {
-      id: 2,
-      stationId: 3,
-      stationName: "Station BP - Marseille Nord",
-      tankId: 5,
-      tankName: "Cuve 1",
-      fuelType: "essence",
-      levelBefore: 1280,
-      quantityDelivered: 15000,
-      levelAfter: 16280,
-      deliveryDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-      deliveredBy: "Express Fuel Logistics",
-      driverName: "Marie Martin",
-      truckNumber: "EF-456-GH",
-      orderNumber: "CMD-2025-002",
-      notes: "Livraison urgente - Niveau critique",
-      temperature: 20,
-      density: 0.74,
-      validated: true,
-      validatedBy: "Admin User",
-      validatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000),
-    },
-    {
-      id: 3,
-      stationId: 2,
-      stationName: "Station Shell - Lyon Centre",
-      tankId: 4,
-      tankName: "Cuve 2",
-      fuelType: "gasoil",
-      levelBefore: 5200,
-      quantityDelivered: 10000,
-      levelAfter: 15200,
-      deliveryDate: new Date(Date.now() - 5 * 60 * 60 * 1000),
-      deliveredBy: "Transport Pétrolier SA",
-      driverName: "Pierre Leroy",
-      truckNumber: "AB-789-IJ",
-      orderNumber: "CMD-2025-003",
-      notes: "",
-      temperature: 19,
-      density: 0.85,
-      validated: false,
-      validatedBy: null,
-      validatedAt: null,
-    },
-  ])
+  const deliveries = ref([])
+  const loading = ref(false)
+  const error = ref(null)
+  const pagination = ref({
+    currentPage: 1,
+    lastPage: 1,
+    total: 0,
+    perPage: 20,
+  })
 
-  const pendingDeliveries = computed(() => deliveries.value.filter((d) => !d.validated))
-  const validatedDeliveries = computed(() => deliveries.value.filter((d) => d.validated))
+  // Computed
+  const pendingDeliveries = computed(() =>
+    deliveries.value.filter((d) => !d.validated)
+  )
+  const validatedDeliveries = computed(() =>
+    deliveries.value.filter((d) => d.validated)
+  )
 
-  // Statistiques
   const totalDeliveriesThisMonth = computed(() => {
     const now = new Date()
-    const thisMonth = deliveries.value.filter((d) => {
+    return deliveries.value.filter((d) => {
       const deliveryDate = new Date(d.deliveryDate)
-      return deliveryDate.getMonth() === now.getMonth() && deliveryDate.getFullYear() === now.getFullYear()
-    })
-    return thisMonth.length
+      return (
+        deliveryDate.getMonth() === now.getMonth() &&
+        deliveryDate.getFullYear() === now.getFullYear()
+      )
+    }).length
   })
 
   const totalVolumeThisMonth = computed(() => {
     const now = new Date()
     const thisMonth = deliveries.value.filter((d) => {
       const deliveryDate = new Date(d.deliveryDate)
-      return deliveryDate.getMonth() === now.getMonth() && deliveryDate.getFullYear() === now.getFullYear()
+      return (
+        deliveryDate.getMonth() === now.getMonth() &&
+        deliveryDate.getFullYear() === now.getFullYear()
+      )
     })
     return thisMonth.reduce((sum, d) => sum + d.quantityDelivered, 0)
   })
@@ -99,71 +50,194 @@ export const useDeliveriesStore = defineStore("deliveries", () => {
     return Math.round(total / deliveries.value.length)
   })
 
-  function addDelivery(deliveryData) {
-    const newDelivery = {
-      id: Date.now(),
-      deliveryDate: new Date(),
-      validated: false,
-      validatedBy: null,
-      validatedAt: null,
-      temperature: 20,
-      density: deliveryData.fuelType === "essence" ? 0.74 : 0.85,
-      ...deliveryData,
-    }
-    deliveries.value.unshift(newDelivery)
-    return newDelivery
-  }
+  // Fetch deliveries with optional filters
+  async function fetchDeliveries(params = {}) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await deliveriesApi.getAll(params)
+      deliveries.value = response.data.map(transformDelivery)
 
-  function validateDelivery(deliveryId, validatedBy) {
-    const delivery = deliveries.value.find((d) => d.id === deliveryId)
-    if (delivery) {
-      delivery.validated = true
-      delivery.validatedBy = validatedBy
-      delivery.validatedAt = new Date()
-    }
-  }
+      if (response.meta) {
+        pagination.value = {
+          currentPage: response.meta.current_page,
+          lastPage: response.meta.last_page,
+          total: response.meta.total,
+          perPage: response.meta.per_page,
+        }
+      }
 
-  function updateDelivery(deliveryId, updates) {
-    const delivery = deliveries.value.find((d) => d.id === deliveryId)
-    if (delivery) {
-      Object.assign(delivery, updates)
+      return deliveries.value
+    } catch (err) {
+      error.value = err.message
+      console.error("Failed to fetch deliveries:", err)
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
-  function deleteDelivery(deliveryId) {
-    const index = deliveries.value.findIndex((d) => d.id === deliveryId)
-    if (index > -1) {
-      deliveries.value.splice(index, 1)
+  // Get single delivery
+  async function fetchDelivery(id) {
+    loading.value = true
+    try {
+      const response = await deliveriesApi.getOne(id)
+      return transformDelivery(response.data)
+    } catch (err) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
     }
   }
 
-  async function fetchDeliveries() {
-    // Simulate API call
-    return new Promise((resolve) => {
-      setTimeout(resolve, 500)
-    })
+  // Create delivery
+  async function addDelivery(deliveryData) {
+    loading.value = true
+    try {
+      const response = await deliveriesApi.create({
+        station_id: deliveryData.stationId,
+        tank_id: deliveryData.tankId,
+        fuel_type: deliveryData.fuelType,
+        level_before: deliveryData.levelBefore,
+        quantity_delivered: deliveryData.quantityDelivered,
+        level_after: deliveryData.levelAfter,
+        delivery_date: deliveryData.deliveryDate,
+        delivered_by: deliveryData.deliveredBy,
+        driver_name: deliveryData.driverName,
+        truck_number: deliveryData.truckNumber,
+        order_number: deliveryData.orderNumber,
+        notes: deliveryData.notes,
+        temperature: deliveryData.temperature,
+        density: deliveryData.density,
+      })
+      const newDelivery = transformDelivery(response.data)
+      deliveries.value.unshift(newDelivery)
+      return newDelivery
+    } catch (err) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
   }
 
+  // Update delivery
+  async function updateDelivery(deliveryId, updates) {
+    try {
+      const response = await deliveriesApi.update(deliveryId, {
+        station_id: updates.stationId,
+        tank_id: updates.tankId,
+        fuel_type: updates.fuelType,
+        level_before: updates.levelBefore,
+        quantity_delivered: updates.quantityDelivered,
+        level_after: updates.levelAfter,
+        delivery_date: updates.deliveryDate,
+        delivered_by: updates.deliveredBy,
+        driver_name: updates.driverName,
+        truck_number: updates.truckNumber,
+        order_number: updates.orderNumber,
+        notes: updates.notes,
+        temperature: updates.temperature,
+        density: updates.density,
+      })
+      const updatedDelivery = transformDelivery(response.data)
+
+      const index = deliveries.value.findIndex((d) => d.id === deliveryId)
+      if (index !== -1) {
+        deliveries.value[index] = updatedDelivery
+      }
+
+      return updatedDelivery
+    } catch (err) {
+      error.value = err.message
+      throw err
+    }
+  }
+
+  // Validate delivery
+  async function validateDelivery(deliveryId) {
+    try {
+      const response = await deliveriesApi.validate(deliveryId)
+      const updatedDelivery = transformDelivery(response.data)
+
+      const index = deliveries.value.findIndex((d) => d.id === deliveryId)
+      if (index !== -1) {
+        deliveries.value[index] = updatedDelivery
+      }
+
+      return updatedDelivery
+    } catch (err) {
+      error.value = err.message
+      throw err
+    }
+  }
+
+  // Delete delivery
+  async function deleteDelivery(deliveryId) {
+    try {
+      await deliveriesApi.delete(deliveryId)
+      deliveries.value = deliveries.value.filter((d) => d.id !== deliveryId)
+    } catch (err) {
+      error.value = err.message
+      throw err
+    }
+  }
+
+  // Transform API response to frontend format
+  function transformDelivery(apiDelivery) {
+    return {
+      id: apiDelivery.id,
+      stationId: apiDelivery.station_id,
+      stationName: apiDelivery.station?.name || "Station inconnue",
+      tankId: apiDelivery.tank_id,
+      tankName: apiDelivery.tank?.name || "Cuve inconnue",
+      fuelType: apiDelivery.fuel_type,
+      levelBefore: parseFloat(apiDelivery.level_before),
+      quantityDelivered: parseFloat(apiDelivery.quantity_delivered),
+      levelAfter: parseFloat(apiDelivery.level_after),
+      deliveryDate: new Date(apiDelivery.delivery_date),
+      deliveredBy: apiDelivery.delivered_by,
+      driverName: apiDelivery.driver_name,
+      truckNumber: apiDelivery.truck_number,
+      orderNumber: apiDelivery.order_number,
+      notes: apiDelivery.notes,
+      temperature: parseFloat(apiDelivery.temperature) || null,
+      density: parseFloat(apiDelivery.density) || null,
+      validated: apiDelivery.validated,
+      validatedBy: apiDelivery.validator?.name || apiDelivery.validated_by,
+      validatedAt: apiDelivery.validated_at
+        ? new Date(apiDelivery.validated_at)
+        : null,
+    }
+  }
+
+  // Get deliveries by station
   function getDeliveriesByStation(stationId) {
     return deliveries.value.filter((d) => d.stationId === stationId)
   }
 
+  // Get deliveries by tank
   function getDeliveriesByTank(tankId) {
     return deliveries.value.filter((d) => d.tankId === tankId)
   }
 
   return {
     deliveries,
+    loading,
+    error,
+    pagination,
     pendingDeliveries,
     validatedDeliveries,
     totalDeliveriesThisMonth,
     totalVolumeThisMonth,
     averageDeliveryVolume,
-    addDelivery,
-    validateDelivery,
-    updateDelivery,
-    deleteDelivery,
     fetchDeliveries,
+    fetchDelivery,
+    addDelivery,
+    updateDelivery,
+    validateDelivery,
+    deleteDelivery,
     getDeliveriesByStation,
     getDeliveriesByTank,
   }

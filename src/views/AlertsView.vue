@@ -162,7 +162,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAlertsStore } from '@/stores/alerts'
 import {
   Bell,
@@ -181,6 +181,15 @@ import AlertCard from '@/components/alerts/AlertCard.vue'
 import AlertDetailsDialog from '@/components/alerts/AlertDetailsDialog.vue'
 
 const alertsStore = useAlertsStore()
+
+// Fetch alerts on mount
+onMounted(async () => {
+  try {
+    await alertsStore.fetchAlerts()
+  } catch (error) {
+    console.error('Failed to fetch alerts:', error)
+  }
+})
 
 const searchQuery = ref('')
 const severityFilter = ref('all')
@@ -233,9 +242,14 @@ const filteredAlerts = computed(() => {
   return result
 })
 
-function resolveAlert(alert) {
-  alertsStore.resolveAlert(alert.id)
-  showDetailsDialog.value = false
+async function resolveAlert(alert) {
+  try {
+    await alertsStore.resolveAlert(alert.id)
+    showDetailsDialog.value = false
+  } catch (error) {
+    console.error('Failed to resolve alert:', error)
+    alert('Erreur lors de la résolution: ' + error.message)
+  }
 }
 
 function viewAlertDetails(alert) {

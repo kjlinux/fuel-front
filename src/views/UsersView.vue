@@ -44,7 +44,19 @@
       </select>
     </div>
 
-    <div class="bg-card border border-border rounded-lg overflow-hidden">
+    <!-- Loading state -->
+    <div v-if="usersStore.loading" class="flex justify-center py-12">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    </div>
+
+    <!-- Error state -->
+    <div v-else-if="usersStore.error" class="bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-destructive">
+      {{ usersStore.error }}
+      <button @click="loadUsers" class="ml-2 underline">Réessayer</button>
+    </div>
+
+    <!-- Users table -->
+    <div v-else class="bg-card border border-border rounded-lg overflow-hidden">
       <table class="w-full">
         <thead class="bg-muted/50 border-b border-border">
           <tr>
@@ -52,7 +64,7 @@
             <th class="text-left px-6 py-4 text-sm font-semibold text-foreground">Rôle</th>
             <th class="text-left px-6 py-4 text-sm font-semibold text-foreground">Stations</th>
             <th class="text-left px-6 py-4 text-sm font-semibold text-foreground">Statut</th>
-            <th class="text-left px-6 py-4 text-sm font-semibold text-foreground">Dernière connexion</th>
+            <th class="text-left px-6 py-4 text-sm font-semibold text-foreground">Créé le</th>
             <th class="text-right px-6 py-4 text-sm font-semibold text-foreground">Actions</th>
           </tr>
         </thead>
@@ -78,28 +90,28 @@
                 }"
                 class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
               >
-                {{ getRoleLabel(user.role) }}
+                {{ usersStore.getRoleLabel(user.role) }}
               </span>
             </td>
             <td class="px-6 py-4">
               <div class="text-sm text-foreground">
-                {{ user.stations.length }} station{{ user.stations.length > 1 ? 's' : '' }}
+                {{ user.stations?.length || 0 }} station{{ (user.stations?.length || 0) > 1 ? 's' : '' }}
               </div>
             </td>
             <td class="px-6 py-4">
               <span
                 :class="{
-                  'bg-green-500/20 text-green-400': user.status === 'active',
-                  'bg-gray-500/20 text-gray-400': user.status === 'inactive'
+                  'bg-green-500/20 text-green-400': user.isActive,
+                  'bg-gray-500/20 text-gray-400': !user.isActive
                 }"
                 class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
               >
                 <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
-                {{ user.status === 'active' ? 'Actif' : 'Inactif' }}
+                {{ user.isActive ? 'Actif' : 'Inactif' }}
               </span>
             </td>
             <td class="px-6 py-4 text-sm text-muted-foreground">
-              {{ formatDate(user.lastLogin) }}
+              {{ formatDate(user.createdAt) }}
             </td>
             <td class="px-6 py-4">
               <div class="flex items-center justify-end gap-2">
@@ -115,9 +127,9 @@
                 <button
                   @click="toggleUserStatus(user)"
                   class="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                  :title="user.status === 'active' ? 'Désactiver' : 'Activer'"
+                  :title="user.isActive ? 'Désactiver' : 'Activer'"
                 >
-                  <svg v-if="user.status === 'active'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg v-if="user.isActive" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                   </svg>
                   <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,7 +137,7 @@
                   </svg>
                 </button>
                 <button
-                  @click="deleteUser(user)"
+                  @click="handleDeleteUser(user)"
                   class="p-2 hover:bg-destructive/10 rounded-lg transition-colors text-muted-foreground hover:text-destructive"
                   title="Supprimer"
                 >
@@ -134,6 +146,11 @@
                   </svg>
                 </button>
               </div>
+            </td>
+          </tr>
+          <tr v-if="filteredUsers.length === 0">
+            <td colspan="6" class="px-6 py-12 text-center text-muted-foreground">
+              Aucun utilisateur trouvé
             </td>
           </tr>
         </tbody>
@@ -150,8 +167,11 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useUsersStore } from '@/stores/users'
 import UserDialog from '@/components/users/UserDialog.vue'
+
+const usersStore = useUsersStore()
 
 const searchQuery = ref('')
 const roleFilter = ref('')
@@ -159,83 +179,35 @@ const statusFilter = ref('')
 const showUserDialog = ref(false)
 const selectedUser = ref(null)
 
-// Mock data
-const users = ref([
-  {
-    id: 1,
-    name: 'Admin Principal',
-    email: 'admin@fueliot.com',
-    role: 'super_admin',
-    status: 'active',
-    stations: [1, 2, 3, 4],
-    lastLogin: new Date('2025-01-10T14:30:00')
-  },
-  {
-    id: 2,
-    name: 'Jean Dupont',
-    email: 'jean.dupont@station1.com',
-    role: 'admin',
-    status: 'active',
-    stations: [1],
-    lastLogin: new Date('2025-01-10T09:15:00')
-  },
-  {
-    id: 3,
-    name: 'Marie Martin',
-    email: 'marie.martin@station2.com',
-    role: 'admin',
-    status: 'active',
-    stations: [2],
-    lastLogin: new Date('2025-01-09T16:45:00')
-  },
-  {
-    id: 4,
-    name: 'Pierre Durand',
-    email: 'pierre.durand@station1.com',
-    role: 'manager',
-    status: 'active',
-    stations: [1],
-    lastLogin: new Date('2025-01-10T11:20:00')
-  },
-  {
-    id: 5,
-    name: 'Sophie Bernard',
-    email: 'sophie.bernard@station3.com',
-    role: 'manager',
-    status: 'inactive',
-    stations: [3],
-    lastLogin: new Date('2025-01-05T08:30:00')
+// Load users on mount
+onMounted(() => {
+  loadUsers()
+})
+
+async function loadUsers() {
+  try {
+    await usersStore.fetchUsers()
+  } catch (error) {
+    console.error('Failed to load users:', error)
   }
-])
+}
 
 const filteredUsers = computed(() => {
-  return users.value.filter(user => {
+  return usersStore.users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchQuery.value.toLowerCase())
     const matchesRole = !roleFilter.value || user.role === roleFilter.value
-    const matchesStatus = !statusFilter.value || user.status === statusFilter.value
+    const matchesStatus = !statusFilter.value ||
+                         (statusFilter.value === 'active' && user.isActive) ||
+                         (statusFilter.value === 'inactive' && !user.isActive)
     return matchesSearch && matchesRole && matchesStatus
   })
 })
 
-const getRoleLabel = (role) => {
-  const labels = {
-    super_admin: 'Super Admin',
-    admin: 'Admin Station',
-    manager: 'Manager'
-  }
-  return labels[role] || role
-}
-
 const formatDate = (date) => {
-  const now = new Date()
-  const diff = now - date
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  
-  if (hours < 1) return 'À l\'instant'
-  if (hours < 24) return `Il y a ${hours}h`
-  
-  return date.toLocaleDateString('fr-FR', {
+  if (!date) return '-'
+  const d = new Date(date)
+  return d.toLocaleDateString('fr-FR', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
@@ -247,34 +219,39 @@ const openUserDialog = (user = null) => {
   showUserDialog.value = true
 }
 
-const handleSaveUser = (userData) => {
-  if (selectedUser.value) {
-    // Update existing user
-    const index = users.value.findIndex(u => u.id === selectedUser.value.id)
-    if (index !== -1) {
-      users.value[index] = { ...users.value[index], ...userData }
+const handleSaveUser = async (userData) => {
+  try {
+    if (selectedUser.value) {
+      await usersStore.updateUser(selectedUser.value.id, userData)
+    } else {
+      await usersStore.createUser(userData)
     }
-  } else {
-    // Add new user
-    users.value.push({
-      id: Date.now(),
-      ...userData,
-      status: 'active',
-      lastLogin: new Date()
-    })
+    showUserDialog.value = false
+  } catch (error) {
+    console.error('Failed to save user:', error)
+    alert('Erreur lors de la sauvegarde: ' + error.message)
   }
-  showUserDialog.value = false
 }
 
-const toggleUserStatus = (user) => {
-  user.status = user.status === 'active' ? 'inactive' : 'active'
+const toggleUserStatus = async (user) => {
+  try {
+    await usersStore.updateUser(user.id, {
+      ...user,
+      isActive: !user.isActive
+    })
+  } catch (error) {
+    console.error('Failed to toggle user status:', error)
+    alert('Erreur: ' + error.message)
+  }
 }
 
-const deleteUser = (user) => {
+const handleDeleteUser = async (user) => {
   if (confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur ${user.name} ?`)) {
-    const index = users.value.findIndex(u => u.id === user.id)
-    if (index !== -1) {
-      users.value.splice(index, 1)
+    try {
+      await usersStore.deleteUser(user.id)
+    } catch (error) {
+      console.error('Failed to delete user:', error)
+      alert('Erreur: ' + error.message)
     }
   }
 }

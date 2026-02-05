@@ -84,7 +84,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStationsStore } from '@/stores/stations'
 import { Plus, Search, RefreshCw, Building2 } from 'lucide-vue-next'
@@ -104,65 +104,31 @@ const refreshing = ref(false)
 const showAddStationDialog = ref(false)
 const editingStation = ref(null)
 
-// Mock stations data
-const stations = ref([
-  {
-    id: 1,
-    name: 'Station Total Dakar',
-    address: 'Avenue Cheikh Anta Diop, Dakar',
-    location: { lat: 14.6937, lng: -17.4441 },
-    status: 'online',
-    manager: 'Amadou Diallo',
-    phone: '+221 77 123 45 67',
-    tanks: [
-      { id: 1, type: 'essence', level: 15420, capacity: 20000, percentage: 77, temperature: 28 },
-      { id: 2, type: 'gasoil', level: 8900, capacity: 15000, percentage: 59, temperature: 26 }
-    ],
-    lastUpdate: new Date()
-  },
-  {
-    id: 2,
-    name: 'Station Shell Rufisque',
-    address: 'Route de Rufisque, Dakar',
-    location: { lat: 14.7167, lng: -17.2667 },
-    status: 'online',
-    manager: 'Fatou Sall',
-    phone: '+221 77 234 56 78',
-    tanks: [
-      { id: 3, type: 'essence', level: 18200, capacity: 20000, percentage: 91, temperature: 29 },
-      { id: 4, type: 'gasoil', level: 4200, capacity: 15000, percentage: 28, temperature: 27 }
-    ],
-    lastUpdate: new Date()
-  },
-  {
-    id: 3,
-    name: 'Station Elton Thiès',
-    address: 'Avenue Lamine Gueye, Thiès',
-    location: { lat: 14.7889, lng: -16.9322 },
-    status: 'warning',
-    manager: 'Moussa Ndiaye',
-    phone: '+221 77 345 67 89',
-    tanks: [
-      { id: 5, type: 'essence', level: 3200, capacity: 20000, percentage: 16, temperature: 30 },
-      { id: 6, type: 'gasoil', level: 12400, capacity: 15000, percentage: 83, temperature: 28 }
-    ],
-    lastUpdate: new Date()
-  },
-  {
-    id: 4,
-    name: 'Station Oilibya Mbour',
-    address: 'Route de Mbour, Thiès',
-    location: { lat: 14.4167, lng: -16.9667 },
-    status: 'online',
-    manager: 'Aissatou Ba',
-    phone: '+221 77 456 78 90',
-    tanks: [
-      { id: 7, type: 'essence', level: 16800, capacity: 20000, percentage: 84, temperature: 27 },
-      { id: 8, type: 'gasoil', level: 11200, capacity: 15000, percentage: 75, temperature: 26 }
-    ],
-    lastUpdate: new Date()
+// Use stations from the store (fetched from API)
+const stations = computed(() => {
+  return stationsStore.stations.map(station => ({
+    ...station,
+    location: station.location || { lat: station.latitude || 14.6937, lng: station.longitude || -17.4441 },
+    manager: station.managerName || station.manager || 'Non assigné',
+    phone: station.phone || '',
+    tanks: (station.tanks || []).map(tank => ({
+      ...tank,
+      type: tank.fuelType || tank.type,
+      level: tank.currentLevel || tank.level || 0,
+      percentage: tank.capacity > 0 ? Math.round((tank.currentLevel || tank.level || 0) / tank.capacity * 100) : 0
+    })),
+    lastUpdate: station.updatedAt ? new Date(station.updatedAt) : new Date()
+  }))
+})
+
+// Fetch stations on mount
+onMounted(async () => {
+  try {
+    await stationsStore.fetchStations()
+  } catch (error) {
+    console.error('Failed to fetch stations:', error)
   }
-])
+})
 
 const filteredStations = computed(() => {
   let result = stations.value
@@ -171,9 +137,9 @@ const filteredStations = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(station =>
-      station.name.toLowerCase().includes(query) ||
-      station.address.toLowerCase().includes(query) ||
-      station.manager.toLowerCase().includes(query)
+      (station.name || '').toLowerCase().includes(query) ||
+      (station.address || '').toLowerCase().includes(query) ||
+      (station.manager || '').toLowerCase().includes(query)
     )
   }
 
@@ -194,42 +160,44 @@ function editStation(station) {
   showAddStationDialog.value = true
 }
 
-function deleteStation(station) {
+async function deleteStation(station) {
   if (confirm(`Êtes-vous sûr de vouloir supprimer la station "${station.name}" ?`)) {
-    const index = stations.value.findIndex(s => s.id === station.id)
-    if (index !== -1) {
-      stations.value.splice(index, 1)
+    try {
+      await stationsStore.deleteStation(station.id)
+    } catch (error) {
+      console.error('Failed to delete station:', error)
+      alert('Erreur lors de la suppression: ' + error.message)
     }
   }
 }
 
-function handleSaveStation(stationData) {
-  if (editingStation.value) {
-    // Update existing station
-    const index = stations.value.findIndex(s => s.id === editingStation.value.id)
-    if (index !== -1) {
-      stations.value[index] = { ...stations.value[index], ...stationData }
+async function handleSaveStation(stationData) {
+  try {
+    if (editingStation.value) {
+      // Update existing station
+      await stationsStore.updateStation(editingStation.value.id, stationData)
+    } else {
+      // Add new station
+      await stationsStore.createStation(stationData)
     }
-  } else {
-    // Add new station
-    stations.value.push({
-      id: Date.now(),
-      ...stationData,
-      status: 'online',
-      tanks: [],
-      lastUpdate: new Date()
-    })
+    showAddStationDialog.value = false
+    editingStation.value = null
+  } catch (error) {
+    console.error('Failed to save station:', error)
+    alert('Erreur lors de la sauvegarde: ' + error.message)
   }
-  
-  showAddStationDialog.value = false
-  editingStation.value = null
 }
 
 async function refreshStations() {
   refreshing.value = true
-  await stationsStore.fetchStations()
-  setTimeout(() => {
-    refreshing.value = false
-  }, 1000)
+  try {
+    await stationsStore.fetchStations()
+  } catch (error) {
+    console.error('Failed to refresh stations:', error)
+  } finally {
+    setTimeout(() => {
+      refreshing.value = false
+    }, 500)
+  }
 }
 </script>

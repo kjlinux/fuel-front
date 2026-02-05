@@ -1,5 +1,21 @@
 <template>
-  <div v-if="station" class="space-y-6">
+  <!-- Loading state -->
+  <div v-if="loading" class="flex justify-center py-12">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+
+  <!-- Station not found -->
+  <div v-else-if="!station" class="text-center py-12">
+    <h3 class="text-lg font-semibold text-foreground mb-2">Station non trouvée</h3>
+    <p class="text-sm text-muted-foreground mb-4">Cette station n'existe pas ou a été supprimée</p>
+    <Button variant="outline" @click="goBack">
+      <ArrowLeft class="w-4 h-4" />
+      Retour aux stations
+    </Button>
+  </div>
+
+  <!-- Station details -->
+  <div v-else class="space-y-6">
     <!-- Header -->
     <div class="flex items-start justify-between">
       <div class="flex items-center gap-4">
@@ -137,8 +153,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useStationsStore } from '@/stores/stations'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import {
@@ -163,45 +180,50 @@ import TankHistoryChart from '@/components/stations/TankHistoryChart.vue'
 
 const route = useRoute()
 const router = useRouter()
+const stationsStore = useStationsStore()
 
 const showAddTankDialog = ref(false)
 const editingTank = ref(null)
 const selectedPeriod = ref('24h')
+const loading = ref(true)
 
-// Mock station data (in real app, fetch from store/API)
-const station = ref({
-  id: parseInt(route.params.id),
-  name: 'Station Total Dakar',
-  address: 'Avenue Cheikh Anta Diop, Dakar',
-  location: { lat: 14.6937, lng: -17.4441 },
-  status: 'online',
-  manager: 'Amadou Diallo',
-  phone: '+221 77 123 45 67',
-  tanks: [
-    {
-      id: 1,
-      type: 'essence',
-      name: 'Cuve Essence 1',
-      level: 15420,
-      capacity: 20000,
-      percentage: 77,
-      temperature: 28,
-      sensorId: 'SENSOR-001',
-      status: 'normal'
-    },
-    {
-      id: 2,
-      type: 'gasoil',
-      name: 'Cuve Gasoil 1',
-      level: 8900,
-      capacity: 15000,
-      percentage: 59,
-      temperature: 26,
-      sensorId: 'SENSOR-002',
-      status: 'normal'
+// Get station from store with transformed data
+const station = computed(() => {
+  const storeStation = stationsStore.stations.find(s => s.id === route.params.id)
+  if (!storeStation) return null
+
+  return {
+    ...storeStation,
+    location: storeStation.location || { lat: storeStation.latitude || 14.6937, lng: storeStation.longitude || -17.4441 },
+    manager: storeStation.managerName || storeStation.manager || 'Non assigné',
+    phone: storeStation.phone || '',
+    tanks: (storeStation.tanks || []).map(tank => ({
+      ...tank,
+      type: tank.fuelType || tank.type,
+      name: tank.name || `Cuve ${tank.fuelType || tank.type}`,
+      level: tank.currentLevel || tank.level || 0,
+      percentage: tank.capacity > 0 ? Math.round((tank.currentLevel || tank.level || 0) / tank.capacity * 100) : 0,
+      temperature: tank.temperature || 25,
+      status: tank.status || 'normal'
+    })),
+    lastUpdate: storeStation.updatedAt ? new Date(storeStation.updatedAt) : new Date()
+  }
+})
+
+// Fetch station data on mount
+onMounted(async () => {
+  try {
+    // Fetch stations if not already loaded
+    if (stationsStore.stations.length === 0) {
+      await stationsStore.fetchStations()
     }
-  ],
-  lastUpdate: new Date()
+    // Also fetch the specific station to get latest data
+    await stationsStore.fetchStation(route.params.id)
+  } catch (error) {
+    console.error('Failed to fetch station:', error)
+  } finally {
+    loading.value = false
+  }
 })
 
 const statusConfig = {
@@ -227,39 +249,40 @@ function editTank(tank) {
   showAddTankDialog.value = true
 }
 
-function deleteTank(tank) {
+async function deleteTank(tank) {
   if (confirm(`Êtes-vous sûr de vouloir supprimer la cuve "${tank.name}" ?`)) {
-    const index = station.value.tanks.findIndex(t => t.id === tank.id)
-    if (index !== -1) {
-      station.value.tanks.splice(index, 1)
+    try {
+      await stationsStore.deleteTank(tank.id)
+    } catch (error) {
+      console.error('Failed to delete tank:', error)
+      alert('Erreur lors de la suppression: ' + error.message)
     }
   }
 }
 
-function handleSaveTank(tankData) {
-  if (editingTank.value) {
-    // Update existing tank
-    const index = station.value.tanks.findIndex(t => t.id === editingTank.value.id)
-    if (index !== -1) {
-      station.value.tanks[index] = { ...station.value.tanks[index], ...tankData }
+async function handleSaveTank(tankData) {
+  try {
+    if (editingTank.value) {
+      // Update existing tank
+      await stationsStore.updateTank(editingTank.value.id, tankData)
+    } else {
+      // Add new tank
+      await stationsStore.createTank(route.params.id, {
+        ...tankData,
+        currentLevel: 0,
+        temperature: 25
+      })
     }
-  } else {
-    // Add new tank
-    station.value.tanks.push({
-      id: Date.now(),
-      ...tankData,
-      level: 0,
-      percentage: 0,
-      temperature: 25,
-      status: 'normal'
-    })
+    showAddTankDialog.value = false
+    editingTank.value = null
+  } catch (error) {
+    console.error('Failed to save tank:', error)
+    alert('Erreur lors de la sauvegarde: ' + error.message)
   }
-  
-  showAddTankDialog.value = false
-  editingTank.value = null
 }
 
 function formatTime(date) {
+  if (!date) return '--:--'
   return format(new Date(date), 'HH:mm', { locale: fr })
 }
 </script>

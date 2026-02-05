@@ -151,79 +151,51 @@ const deliveriesStore = useDeliveriesStore()
 const refreshing = ref(false)
 const fuelLevelsData = ref([])
 
-// Mock data for demonstration
-const stations = ref([
-  {
-    id: 1,
-    name: 'Station Total Dakar',
-    location: { lat: 14.6937, lng: -17.4441 },
-    status: 'online',
-    tanks: [
-      { id: 1, type: 'essence', level: 15420, capacity: 20000, percentage: 77 },
-      { id: 2, type: 'gasoil', level: 8900, capacity: 15000, percentage: 59 }
-    ]
-  },
-  {
-    id: 2,
-    name: 'Station Shell Rufisque',
-    location: { lat: 14.7167, lng: -17.2667 },
-    status: 'online',
-    tanks: [
-      { id: 3, type: 'essence', level: 18200, capacity: 20000, percentage: 91 },
-      { id: 4, type: 'gasoil', level: 4200, capacity: 15000, percentage: 28 }
-    ]
-  },
-  {
-    id: 3,
-    name: 'Station Elton Thiès',
-    location: { lat: 14.7889, lng: -16.9322 },
-    status: 'warning',
-    tanks: [
-      { id: 5, type: 'essence', level: 3200, capacity: 20000, percentage: 16 },
-      { id: 6, type: 'gasoil', level: 12400, capacity: 15000, percentage: 83 }
-    ]
-  },
-  {
-    id: 4,
-    name: 'Station Oilibya Mbour',
-    location: { lat: 14.4167, lng: -16.9667 },
-    status: 'online',
-    tanks: [
-      { id: 7, type: 'essence', level: 16800, capacity: 20000, percentage: 84 },
-      { id: 8, type: 'gasoil', level: 11200, capacity: 15000, percentage: 75 }
-    ]
-  }
-])
+// Use stations from the store (fetched from API)
+const stations = computed(() => {
+  return stationsStore.stations.map(station => ({
+    ...station,
+    location: station.location || { lat: station.latitude || 14.6937, lng: station.longitude || -17.4441 },
+    tanks: (station.tanks || []).map(tank => ({
+      ...tank,
+      type: tank.fuelType || tank.type,
+      level: tank.currentLevel || tank.level || 0,
+      percentage: tank.capacity > 0 ? Math.round((tank.currentLevel || tank.level || 0) / tank.capacity * 100) : 0
+    }))
+  }))
+})
 
 const recentAlerts = computed(() => alertsStore.alerts.slice(0, 5))
 
 // Extract all tanks from all stations
 const tanks = computed(() => {
-  return stations.value.flatMap(station => station.tanks)
+  return stations.value.flatMap(station => station.tanks || [])
 })
 
 const stats = computed(() => {
-  const totalStations = stations.value.length
-  const activeStations = stations.value.filter(s => s.status === 'online').length
-  
+  const stationsList = stations.value
+  const totalStations = stationsList.length
+  const activeStations = stationsList.filter(s => s.status === 'online' || s.status === 'active').length
+
   let totalVolume = 0
   let totalCapacity = 0
   let totalPercentage = 0
-  
-  stations.value.forEach(station => {
-    station.tanks.forEach(tank => {
-      totalVolume += tank.level
-      totalCapacity += tank.capacity
-      totalPercentage += tank.percentage
+  let tankCount = 0
+
+  stationsList.forEach(station => {
+    (station.tanks || []).forEach(tank => {
+      totalVolume += tank.level || 0
+      totalCapacity += tank.capacity || 0
+      totalPercentage += tank.percentage || 0
+      tankCount++
     })
   })
-  
-  const tankCount = stations.value.reduce((acc, s) => acc + s.tanks.length, 0)
-  const averageCapacity = Math.round(totalPercentage / tankCount)
-  
+
+  const averageCapacity = tankCount > 0 ? Math.round(totalPercentage / tankCount) : 0
+
   const activeAlerts = alertsStore.alerts.filter(a => !a.resolved).length
   const criticalAlerts = alertsStore.alerts.filter(a => !a.resolved && a.severity === 'critical').length
-  
+
   return {
     totalStations,
     activeStations,
@@ -264,37 +236,31 @@ function generateFuelLevelsData() {
   fuelLevelsData.value = data
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // Fetch data from API
+  try {
+    await Promise.all([
+      stationsStore.fetchStations(),
+      alertsStore.fetchAlerts(),
+      deliveriesStore.fetchDeliveries()
+    ])
+  } catch (error) {
+    console.error('Failed to fetch dashboard data:', error)
+  }
+
   generateFuelLevelsData()
-  
-  // Update data every 5 seconds
+
+  // Update chart data every 5 seconds
   setInterval(() => {
     const lastPoint = fuelLevelsData.value[fuelLevelsData.value.length - 1]
-    fuelLevelsData.value.shift()
-    fuelLevelsData.value.push({
-      timestamp: Date.now(),
-      essence: lastPoint.essence + Math.random() * 400 - 200,
-      gasoil: lastPoint.gasoil + Math.random() * 300 - 150
-    })
+    if (lastPoint) {
+      fuelLevelsData.value.shift()
+      fuelLevelsData.value.push({
+        timestamp: Date.now(),
+        essence: lastPoint.essence + Math.random() * 400 - 200,
+        gasoil: lastPoint.gasoil + Math.random() * 300 - 150
+      })
+    }
   }, 5000)
-  
-  // Add some mock alerts
-  if (alertsStore.alerts.length === 0) {
-    alertsStore.addAlert({
-      type: 'low_level',
-      severity: 'warning',
-      stationId: 3,
-      tankId: 5,
-      message: 'Niveau bas détecté - Essence (16%)'
-    })
-    
-    alertsStore.addAlert({
-      type: 'anomaly',
-      severity: 'critical',
-      stationId: 2,
-      tankId: 4,
-      message: 'Baisse anormale détectée - Possible fuite'
-    })
-  }
 })
 </script>
